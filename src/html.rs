@@ -1,10 +1,13 @@
 #[allow(unused_imports)]
 use crate::dom::{AttrMap, Element, Node, Text};
 use combine::error::ParseError;
-use combine::parser::char::char;
+//use combine::parser::char::char;
+use combine::parser::char::{char, letter, space, newline};
 #[allow(unused_imports)]
 use combine::EasyParser;
-use combine::{parser, Parser, Stream};
+//use combine::{parser, Parser, Stream};
+use combine::{parser, many1, many, Parser, Stream, between, satisfy};
+
 
 /// `attribute` consumes `name="value"`.
 fn attribute<Input>() -> impl Parser<Input, Output = (String, String)>
@@ -12,8 +15,15 @@ where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
-    todo!("you need to implement this combinator");
-    (char(' ')).map(|_| ("".to_string(), "".to_string()))
+    (
+        many1::<String,_,_>(letter()), // 属性の名前を何文字か読む
+        many::<String,_,_>(space().or(newline())), // 空白と改行を読み飛ばす
+        char('='), // = を読む
+        many::<String,_,_>(space().or(newline())), // 空白と勧業を読み飛ばす
+        between(char('"'), char('"'), many1::<String, _, _>(satisfy(|c: char| c != '"'))), // 引用符の間の、引用符を含まない文字を読む
+        // between(char('"'),char('"')),many1::<String,_,_>(satisfy(|c: char| c!= '"'))), // 引用符の間の、引用符を含まない文字を読む
+    )
+    .map(|v|(v.0,v.4))
 }
 
 /// `attributes` consumes `name1="value1" name2="value2" ... name="value"`
